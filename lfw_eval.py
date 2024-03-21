@@ -34,7 +34,9 @@ def KFold(n=6000, n_folds=10, shuffle=False):
     folds = []
     base = list(range(n))
     for i in range(n_folds):
-        test = base[i*n/n_folds:(i+1)*n/n_folds]
+        start_idx = i * n // n_folds  # 使用整数除法
+        end_idx = (i + 1) * n // n_folds  # 使用整数除法
+        test = base[start_idx:end_idx]
         train = list(set(base)-set(test))
         folds.append([train,test])
     return folds
@@ -65,13 +67,14 @@ def find_best_threshold(thresholds, predicts):
 parser = argparse.ArgumentParser(description='PyTorch sphereface lfw')
 parser.add_argument('--net','-n', default='sphere20a', type=str)
 parser.add_argument('--lfw', default='../../dataset/face/lfw/lfw.zip', type=str)
-parser.add_argument('--model','-m', default='sphere20a.pth', type=str)
+parser.add_argument('--model','-m', default='./model/sphere20a_20171020.pth', type=str)
 args = parser.parse_args()
 
+device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
 predicts=[]
 net = getattr(net_sphere,args.net)()
 net.load_state_dict(torch.load(args.model))
-net.cuda()
+net.to(device)
 net.eval()
 net.feature = True
 
@@ -108,8 +111,11 @@ for i in range(6000):
         imglist[i] = (imglist[i]-127.5)/128.0
 
     img = np.vstack(imglist)
-    img = Variable(torch.from_numpy(img).float(),volatile=True).cuda()
-    output = net(img)
+    img = torch.from_numpy(img).float()
+    with torch.no_grad():
+        img = Variable(img).to(device)
+        print(img)
+        output = net(img)
     f = output.data
     f1,f2 = f[0],f[2]
     cosdistance = f1.dot(f2)/(f1.norm()*f2.norm()+1e-5)
@@ -120,9 +126,10 @@ accuracy = []
 thd = []
 folds = KFold(n=6000, n_folds=10, shuffle=False)
 thresholds = np.arange(-1.0, 1.0, 0.005)
-predicts = np.array(map(lambda line:line.strip('\n').split(), predicts))
+predicts = np.array([k.strip('\n').split() for k in predicts])
 for idx, (train, test) in enumerate(folds):
     best_thresh = find_best_threshold(thresholds, predicts[train])
     accuracy.append(eval_acc(best_thresh, predicts[test]))
     thd.append(best_thresh)
 print('LFWACC={:.4f} std={:.4f} thd={:.4f}'.format(np.mean(accuracy), np.std(accuracy), np.mean(thd)))
+

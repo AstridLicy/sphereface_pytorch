@@ -10,7 +10,7 @@ torch.backends.cudnn.bencmark = True
 import os,sys,cv2,random,datetime
 import argparse
 import numpy as np
-
+import zipfile
 from dataset import ImageDataset
 from matlab_cp2tform import get_similarity_transform_for_cv2
 import net_sphere
@@ -18,12 +18,16 @@ import net_sphere
 
 parser = argparse.ArgumentParser(description='PyTorch sphereface')
 parser.add_argument('--net','-n', default='sphere20a', type=str)
-parser.add_argument('--dataset', default='../../dataset/face/casia/casia.zip', type=str)
+parser.add_argument('--dataset', default='/home/chiyunli/dataset/casia.zip', type=str)
 parser.add_argument('--lr', default=0.1, type=float, help='learning rate')
 parser.add_argument('--bs', default=256, type=int, help='')
 args = parser.parse_args()
 use_cuda = torch.cuda.is_available()
 
+# with zipfile.ZipFile(args.dataset) as zfile:
+#     print(zfile.namelist())
+
+# exit(0)
 
 def alignment(src_img,src_pts):
     of = 2
@@ -97,7 +101,7 @@ def train(epoch,args):
     correct = 0
     total = 0
     batch_idx = 0
-    ds = ImageDataset(args.dataset,dataset_load,'data/casia_landmark.txt',name=args.net+':train',
+    ds = ImageDataset(args.dataset,dataset_load,'/home/chiyunli/dataset/casia_landmark.txt',name=args.net+':train',
         bs=args.bs,shuffle=True,nthread=6,imagesize=128)
     while True:
         img,label = ds.get()

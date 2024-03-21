@@ -164,11 +164,13 @@ class sphere20a(nn.Module):
         x = x + self.relu3_5(self.conv3_5(self.relu3_4(self.conv3_4(x))))
         x = x + self.relu3_7(self.conv3_7(self.relu3_6(self.conv3_6(x))))
         x = x + self.relu3_9(self.conv3_9(self.relu3_8(self.conv3_8(x))))
-
+        # print(x.shape)
+        # exit()
         x = self.relu4_1(self.conv4_1(x))
         x = x + self.relu4_3(self.conv4_3(self.relu4_2(self.conv4_2(x))))
-
-        x = x.view(x.size(0),-1)
+        # print(x.shape)
+        # exit()
+        x = x.reshape(x.size(0),-1)
         x = self.fc5(x)
         if self.feature: return x
 
